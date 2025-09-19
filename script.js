@@ -145,25 +145,12 @@ function parseRules(text) {
   return rules;
 }
 
-// flexible matcher to support multi-word (e.g., "paypal pypl")
-function matchesKeyword(descLower, keywordLower){
-  if (!keywordLower) return false;
-  const parts = String(keywordLower).split(/\s+/).filter(Boolean);
-  let pos = 0;
-  for (const p of parts){
-    const i = descLower.indexOf(p, pos);
-    if (i === -1) return false;
-    pos = i + p.length;
-  }
-  return true;
-}
-
-function categorise(txns, rules){
-  for (const t of txns){
-    const descLower = (t.description||'').toLowerCase();
+function categorise(txns, rules) {
+  for (const t of txns) {
+    const desc = t.description.toLowerCase();
     let matched = 'UNCATEGORISED';
-    for (const r of rules){
-      if (matchesKeyword(descLower, r.keyword)) { matched = r.category; break; }
+    for (const r of rules) {
+      if (desc.includes(r.keyword)) { matched = r.category; break; }
     }
     t.category = matched;
   }
@@ -494,33 +481,29 @@ document.getElementById('monthFilter').addEventListener('change', (e) => {
   applyRulesAndRender();
 });
 
+
 window.addEventListener('DOMContentLoaded', async () => {
-  // Restore rules
-  let restored = false;
-  try { const saved = localStorage.getItem(LS_KEYS.RULES); if (saved && saved.trim()) { document.getElementById('rulesBox').value = saved; restored = true; } } catch {}
-  if (!restored) {
-    try { const res = await fetch('rules.txt'); const text = await res.text(); document.getElementById('rulesBox').value = text; restored = true; } catch {}
+  // Restore rules ONLY from localStorage. If none, leave blank.
+  try {
+    const saved = localStorage.getItem(LS_KEYS.RULES);
+    document.getElementById('rulesBox').value = (saved && saved.trim()) ? saved : '';
+  } catch {
+    document.getElementById('rulesBox').value = '';
   }
-  if (!restored) document.getElementById('rulesBox').value = SAMPLE_RULES;
 
   // Restore filters
-  try { const savedFilter = localStorage.getItem(LS_KEYS.FILTER); CURRENT_FILTER = savedFilter && savedFilter.trim() ? savedFilter.toUpperCase() : null; } catch {}
-  try { const savedMonth = localStorage.getItem(LS_KEYS.MONTH); MONTH_FILTER = savedMonth || ""; } catch {}
+  try { 
+    const savedFilter = localStorage.getItem(LS_KEYS.FILTER);
+    CURRENT_FILTER = savedFilter && savedFilter.trim() ? savedFilter.toUpperCase() : null; 
+  } catch {}
+  try { 
+    const savedMonth = localStorage.getItem(LS_KEYS.MONTH); 
+    MONTH_FILTER = savedMonth || ""; 
+  } catch {}
 
   updateFilterUI(); CURRENT_PAGE = 1;
   updateMonthBanner();
 });
-
-const SAMPLE_RULES = `# Rules format: KEYWORD => CATEGORY
-OFFICEWORKS => OFFICE SUPPLIES
-COLES => GROCERIES
-SHELL => PETROL
-UBER => TRANSPORT
-WOOLWORTHS => GROCERIES
-BP => PETROL
-BUNNINGS => HARDWARE
-`;
-
 // --- Transactions collapse logic ---
 function isTxnsCollapsed() {
   try { return localStorage.getItem(LS_KEYS.TXNS_COLLAPSED) !== 'false'; } catch { return true; }
