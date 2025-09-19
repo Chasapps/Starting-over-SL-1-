@@ -145,17 +145,6 @@ function parseRules(text) {
   return rules;
 }
 
-function categoriseold( B txns, rules) {
-  for (const t of txns) {
-    const desc = t.description.toLowerCase();
-    let matched = 'UNCATEGORISED';
-    for (const r of rules) {
-      if (desc.includes(r.keyword)) { matched = r.category; break; }
-    }
-    t.category = matched;
-  }
-  return txns;
-}
 // flexible matcher to support multi-word (e.g., "paypal pypl")
 function matchesKeyword(descLower, keywordLower){
   if (!keywordLower) return false;
