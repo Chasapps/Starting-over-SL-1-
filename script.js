@@ -187,11 +187,11 @@ function renderCategoryTotals(txns) {
   let html = '<table class="cats"><colgroup><col class="col-cat"><col class="col-total"><col class="col-pct"></colgroup><thead><tr><th>Category</th><th class="num">Total</th><th class="num">%</th></tr></thead><tbody>';
   for (const [cat, total] of rows) {
     html += `<tr>
-      <td><a class="catlink" data-cat="${escapeHtml(cat)}"><span class=\"category-name\">${escapeHtml(toTitleCase(cat))}</span></a></td>
-      <td class=\"num\">${total.toFixed(2)}</td><td class=\"num\">${(grand ? (total / grand * 100) : 0).toFixed(1)}%</td>
+      <td><a class="catlink" data-cat="${escapeHtml(cat)}"><span class=\\"category-name\\">${escapeHtml(toTitleCase(cat))}</span></a></td>
+      <td class=\\"num\\">${total.toFixed(2)}</td><td class=\\"num\\">${(grand ? (total / grand * 100) : 0).toFixed(1)}%</td>
     </tr>`;
   }
-  html += `</tbody><tfoot><tr><td>Total</td><td class=\"num\">${grand.toFixed(2)}</td><td class=\"num\">100%</td></tr></tfoot></table>`;
+  html += `</tbody><tfoot><tr><td>Total</td><td class=\\"num\\">${grand.toFixed(2)}</td><td class=\\"num\\">100%</td></tr></tfoot></table>`;
   totalsDiv.innerHTML = html;
 
   totalsDiv.querySelectorAll('a.catlink').forEach(a => {
@@ -219,7 +219,7 @@ function renderMonthTotals() {
   const el = document.getElementById('monthTotals');
   if (el) {
     const label = friendlyMonthOrAll(MONTH_FILTER);
-    const cat = CURRENT_FILTER ? ` + category \"${CURRENT_FILTER}\"` : "";
+    const cat = CURRENT_FILTER ? ` + category \\\"${CURRENT_FILTER}\\\"` : "";
     el.innerHTML = `Showing <span class="badge">${count}</span> transactions for <strong>${friendlyMonthOrAll(MONTH_FILTER)}${cat}</strong> · ` +
                    `Debit: <strong>$${debit.toFixed(2)}</strong> · ` +
                    `Credit: <strong>$${credit.toFixed(2)}</strong> · ` +
@@ -334,7 +334,7 @@ function getFilteredTxns(txns) {
 function updateFilterUI() {
   const label = document.getElementById('activeFilter');
   const btn = document.getElementById('clearFilterBtn');
-  if (CURRENT_FILTER) { label.textContent = `— filtered by \"${CURRENT_FILTER}\"`; btn.style.display = ''; }
+  if (CURRENT_FILTER) { label.textContent = `— filtered by \\\"${CURRENT_FILTER}\\\"`; btn.style.display = ''; }
   else { label.textContent = ''; btn.style.display = 'none'; }
 }
 
@@ -359,7 +359,7 @@ function renderTransactionsTable(txns = monthFilteredTxns()) {
     html += `<tr>
       <td>${escapeHtml(t.date)}</td>
       <td>${t.amount.toFixed(2)}</td>
-      <td><span class=\"category-name\">${escapeHtml(displayCat)}</span></td>
+      <td><span class=\\"category-name\\">${escapeHtml(displayCat)}</span></td>
       <td>${escapeHtml(t.description)}</td>
       <td><button class="rule-btn" onclick="assignCategory(${idx})">+</button></td>
     </tr>`;
@@ -374,7 +374,7 @@ function nextWordAfter(marker, desc) {
   const i = lower.indexOf(String(marker).toLowerCase());
   if (i === -1) return '';
   // slice after the marker, trim separators like space, dash, colon, slash, asterisk
-  let after = (desc || '').slice(i + String(marker).length).replace(/^[\s\-:\/*]+/, '');
+  let after = (desc || '').slice(i + String(marker).length).replace(/^[\\s\\-:\\/*]+/, '');
   const m = after.match(/^([A-Za-z0-9&._]+)/); // merchant-like token
   return m ? m[1] : '';
 }
@@ -388,16 +388,16 @@ function assignCategory(idx) {
 
   // Build a suggested keyword
   let suggestedKeyword = "";
-  if (/\bPAYPAL\b/.test(up)) {
+  if (/\\bPAYPAL\\b/.test(up)) {
     const nxt = nextWordAfter('paypal', desc);
     suggestedKeyword = ('PAYPAL' + (nxt ? ' ' + nxt : '')).toUpperCase();
   } else {
     const visaPos = up.indexOf("VISA-");
     if (visaPos !== -1) {
       const after = desc.substring(visaPos + 5).trim();
-      suggestedKeyword = (after.split(/\s+/)[0] || "").toUpperCase();
+      suggestedKeyword = (after.split(/\\s+/)[0] || "").toUpperCase();
     } else {
-      suggestedKeyword = (desc.split(/\s+/)[0] || "").toUpperCase();
+      suggestedKeyword = (desc.split(/\\s+/)[0] || "").toUpperCase();
     }
   }
 
@@ -414,7 +414,7 @@ function assignCategory(idx) {
 
   // Upsert into rulesBox
   const box = document.getElementById('rulesBox');
-  const lines = String(box.value || "").split(/\r?\n/);
+  const lines = String(box.value || "").split(/\\r?\\n/);
   let updated = false;
   for (let i = 0; i < lines.length; i++) {
     const line = (lines[i] || "").trim();
@@ -430,7 +430,7 @@ function assignCategory(idx) {
     }
   }
   if (!updated) lines.push(`${keyword} => ${category}`);
-  box.value = lines.join("\n");
+  box.value = lines.join("\\n");
   try { localStorage.setItem(LS_KEYS.RULES, box.value); } catch {}
   if (typeof applyRulesAndRender === 'function') applyRulesAndRender();
 }
@@ -494,15 +494,14 @@ document.getElementById('monthFilter').addEventListener('change', (e) => {
   applyRulesAndRender();
 });
 
-
 window.addEventListener('DOMContentLoaded', async () => {
-  // Restore rules ONLY from localStorage. If none, leave blank.
-  try {
-    const saved = localStorage.getItem(LS_KEYS.RULES);
-    document.getElementById('rulesBox').value = (saved && saved.trim()) ? saved : '';
-  } catch {
-    document.getElementById('rulesBox').value = '';
+  // Restore rules
+  let restored = false;
+  try { const saved = localStorage.getItem(LS_KEYS.RULES); if (saved && saved.trim()) { document.getElementById('rulesBox').value = saved; restored = true; } } catch {}
+  if (!restored) {
+    try { const res = await fetch('rules.txt'); const text = await res.text(); document.getElementById('rulesBox').value = text; restored = true; } catch {}
   }
+  if (!restored) document.getElementById('rulesBox').value = SAMPLE_RULES;
 
   // Restore filters
   try { const savedFilter = localStorage.getItem(LS_KEYS.FILTER); CURRENT_FILTER = savedFilter && savedFilter.trim() ? savedFilter.toUpperCase() : null; } catch {}
@@ -511,6 +510,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateFilterUI(); CURRENT_PAGE = 1;
   updateMonthBanner();
 });
+
+const SAMPLE_RULES = `# Rules format: KEYWORD => CATEGORY
+OFFICEWORKS => OFFICE SUPPLIES
+COLES => GROCERIES
+SHELL => PETROL
+UBER => TRANSPORT
+WOOLWORTHS => GROCERIES
+BP => PETROL
+BUNNINGS => HARDWARE
+`;
+
 // --- Transactions collapse logic ---
 function isTxnsCollapsed() {
   try { return localStorage.getItem(LS_KEYS.TXNS_COLLAPSED) !== 'false'; } catch { return true; }
