@@ -145,12 +145,25 @@ function parseRules(text) {
   return rules;
 }
 
-function categorise(txns, rules) {
-  for (const t of txns) {
-    const desc = t.description.toLowerCase();
+// flexible matcher to support multi-word (e.g., "paypal pypl")
+function matchesKeyword(descLower, keywordLower){
+  if (!keywordLower) return false;
+  const parts = String(keywordLower).split(/\s+/).filter(Boolean);
+  let pos = 0;
+  for (const p of parts){
+    const i = descLower.indexOf(p, pos);
+    if (i === -1) return false;
+    pos = i + p.length;
+  }
+  return true;
+}
+
+function categorise(txns, rules){
+  for (const t of txns){
+    const descLower = (t.description||'').toLowerCase();
     let matched = 'UNCATEGORISED';
-    for (const r of rules) {
-      if (desc.includes(r.keyword)) { matched = r.category; break; }
+    for (const r of rules){
+      if (matchesKeyword(descLower, r.keyword)) { matched = r.category; break; }
     }
     t.category = matched;
   }
@@ -492,14 +505,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Restore filters
-  try { 
-    const savedFilter = localStorage.getItem(LS_KEYS.FILTER);
-    CURRENT_FILTER = savedFilter && savedFilter.trim() ? savedFilter.toUpperCase() : null; 
-  } catch {}
-  try { 
-    const savedMonth = localStorage.getItem(LS_KEYS.MONTH); 
-    MONTH_FILTER = savedMonth || ""; 
-  } catch {}
+  try { const savedFilter = localStorage.getItem(LS_KEYS.FILTER); CURRENT_FILTER = savedFilter && savedFilter.trim() ? savedFilter.toUpperCase() : null; } catch {}
+  try { const savedMonth = localStorage.getItem(LS_KEYS.MONTH); MONTH_FILTER = savedMonth || ""; } catch {}
 
   updateFilterUI(); CURRENT_PAGE = 1;
   updateMonthBanner();
