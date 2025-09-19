@@ -145,12 +145,30 @@ function parseRules(text) {
   return rules;
 }
 
-function categorise(txns, rules) {
+function categoriseold( B txns, rules) {
   for (const t of txns) {
     const desc = t.description.toLowerCase();
     let matched = 'UNCATEGORISED';
     for (const r of rules) {
       if (desc.includes(r.keyword)) { matched = r.category; break; }
+    }
+    t.category = matched;
+  }
+  return txns;
+}
+function categorise(txns, rules) {
+  for (const t of txns) {
+    // Normalise description: lowercase, collapse special chars into spaces
+    const desc = t.description
+      .toLowerCase()
+      .replace(/[\-\*\_]+/g, ' ')  // turn separators into spaces
+      .replace(/\s+/g, ' ')        // collapse multiple spaces
+      .trim();
+
+    let matched = 'UNCATEGORISED';
+    for (const r of rules) {
+      const key = r.keyword.replace(/[\-\*\_]+/g, ' ').trim();
+      if (desc.includes(key)) { matched = r.category; break; }
     }
     t.category = matched;
   }
